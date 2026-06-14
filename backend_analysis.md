@@ -11,29 +11,6 @@ The backend is structured as a **FastAPI** web application designed as a skeleto
 2. **RAG (Retrieval-Augmented Generation)**: Ingesting and querying documents (PDF, DOCX, etc.) to ground the chatbot's answers.
 3. **Multi-Database Configuration**: Incorporating both **PostgreSQL** (relational database for chat sessions, feedback, and user profiles) and **MongoDB** (document database for chat logs, messages, and unstructured tool executions/RAG chunks).
 
-### Architecture Diagram
-```mermaid
-graph TD
-    Client[Client Browser / Frontend] <-->|HTTP REST| API[FastAPI Application]
-    
-    subgraph FastAPI Application
-        API -->|Route Matching| Routers[Routers: chat, tools, resources, feedback]
-        Routers -->|Configuration| Config[Config: settings]
-        Routers -->|In-memory / Core logic| Services[Services: Tool Registry]
-        Routers -->|ORM Mapping| Models[Models: SQLAlchemy Declarative Base]
-    end
-    
-    subgraph Databases (Future Integration)
-        Models -.->|Relational Tables| Postgres[(PostgreSQL)]
-        Services -.->|NoSQL Logs & Chunks| Mongo[(MongoDB)]
-    end
-    
-    subgraph External LLM / MCP (Future Integration)
-        Routers -.->|REST / WebSocket| Ollama[Local LLM - Ollama]
-        Routers -.->|JSON-RPC| MCP[MCP Server - External Tools]
-    end
-```
-
 ### Core Design Patterns
 - **Separation of Concerns (MVC-like / Router-Service-Model)**: Routes are separated into the [app/api/](file:///c:/SDriveStuff/Internship/SumaSoft/chatbot-framework-skeleton-final-v2/chatbot-framework/backend/app/api) directory. Business logic is placed in [app/services/](file:///c:/SDriveStuff/Internship/SumaSoft/chatbot-framework-skeleton-final-v2/chatbot-framework/backend/app/services), configurations in [app/core/](file:///c:/SDriveStuff/Internship/SumaSoft/chatbot-framework-skeleton-final-v2/chatbot-framework/backend/app/core), and database schemas in [app/models/](file:///c:/SDriveStuff/Internship/SumaSoft/chatbot-framework-skeleton-final-v2/chatbot-framework/backend/app/models).
 - **Dependency Injection**: Utilizes FastAPI's `Depends` mechanism (to be fully integrated with DB sessions and authentication in subsequent weeks).
