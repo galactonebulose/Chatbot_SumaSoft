@@ -3,8 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
+from app.api.websocket import router as websocket_router
 from app.core.config import Settings
 from app.api import chat, tools, resources, feedback
+from app.api import llm
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
@@ -14,6 +17,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -22,12 +26,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(tools.router, prefix="/tool", tags=["Tools"])
 app.include_router(resources.router, prefix="/resource", tags=["Resources"])
 app.include_router(feedback.router, prefix="/feedback", tags=["Feedback"])
+# WebSocket Router
+app.include_router(websocket_router, prefix="/chat", tags=["WebSocket"])
+# LLM Configuration & Model Selection
+app.include_router(llm.router, prefix="/api/v1", tags=["LLM"])
 
 @app.get("/")
 async def root():
