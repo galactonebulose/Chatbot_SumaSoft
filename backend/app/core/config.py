@@ -9,10 +9,11 @@ class Settings(BaseSettings):
     # Database
     POSTGRES_URL: str = "postgresql://user:pass@localhost:5432/chatbot"
     MONGO_URL: str = "mongodb://localhost:27017/chatbot"
+    QDRANT_URL: str = "http://localhost:6333"
     
     # LLM Configuration - Flexible Model Selection
     DEFAULT_LLM_PROVIDER: str = "ollama"
-    DEFAULT_MODEL_NAME: str = "llama3.1"
+    DEFAULT_MODEL_NAME: str = "llama3.2:3b"
     
     # Ollama Settings
     LLM_API_BASE: str = "http://localhost:11434"   # Ollama default

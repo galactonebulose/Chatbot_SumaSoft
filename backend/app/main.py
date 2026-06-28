@@ -5,11 +5,21 @@ import os
 
 from app.api.websocket import router as websocket_router
 from app.core.config import Settings
-from app.api import chat, tools, resources, feedback
+from app.api import chat, tools, resources, feedback, users
 from app.api import llm
 from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
+
+# Initialize DB tables on startup
+try:
+    from app.core.db import engine
+    from app.models.base import Base
+    from app.models import schemas
+    Base.metadata.create_all(bind=engine)
+    print("Database tables initialized successfully.")
+except Exception as db_init_err:
+    print(f"Warning: Relational database table initialization skipped/failed: {db_init_err}")
 
 app = FastAPI(
     title="Chatbot Framework API",
@@ -38,6 +48,7 @@ else:
 
 # Include routers
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
+app.include_router(users.router, prefix="/user", tags=["Users"])
 app.include_router(tools.router, prefix="/tool", tags=["Tools"])
 app.include_router(resources.router, prefix="/resource", tags=["Resources"])
 app.include_router(feedback.router, prefix="/feedback", tags=["Feedback"])

@@ -12,3 +12,9 @@ langchain-ollama
 langchain-core
 openai>=1.0.0
 httpx
+qdrant-client
+pypdf
+pymupdf
+docx2txt
+pydantic-settings
+pydantic>=2.0
