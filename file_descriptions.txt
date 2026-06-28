@@ -1,0 +1,147 @@
+================================================================================
+                    CHATBOT FRAMEWORK - FILE MAP & DESCRIPTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+BACKEND CORE & ENTRYPOINTS
+--------------------------------------------------------------------------------
+backend/app/main.py
+  -> Sets up the FastAPI application, CORS middlewares, routers, and handles server startup.
+
+backend/app/core/config.py
+  -> Manages project global settings, environment variables, and fallback credentials for local/cloud LLMs.
+
+backend/app/core/db.py
+  -> Configures connection managers and fallback setups for PostgreSQL (to SQLite), MongoDB (to mongomock), and Qdrant (to local folder).
+
+backend/app/core/security.py
+  -> Contains utilities for password hashing and verification using bcrypt.
+
+backend/app/models/base.py
+  -> Defines the SQLAlchemy declarative base object for relational database schemas.
+
+backend/app/models/schemas.py
+  -> Declares SQLAlchemy database tables for custom tools, chat sessions, user feedback, and LLM configurations.
+
+--------------------------------------------------------------------------------
+BACKEND API ROUTERS
+--------------------------------------------------------------------------------
+backend/app/api/chat.py
+  -> REST endpoint for standard chat queries; handles chat history logging and agentic tool-execution loops.
+
+backend/app/api/websocket.py
+  -> WebSocket server `/ws` connection handler delivering real-time streaming tokens and visual tool execution steps.
+
+backend/app/api/feedback.py
+  -> REST endpoints for capturing and storing thumbs-up/down ratings and user comments on assistant replies.
+
+backend/app/api/llm.py
+  -> REST routes for managing LLM configurations, viewing active providers, and validating custom API keys.
+
+backend/app/api/resources.py
+  -> REST API for document vector RAG; handles uploading/deleting documents, chunking text, and querying collections.
+
+backend/app/api/tools.py
+  -> REST endpoints to register, delete, and execute custom API tools or view system built-in actions.
+
+backend/app/api/users.py
+  -> REST endpoints for user authentication, registration, log-ins, profile management, and sessions.
+
+--------------------------------------------------------------------------------
+BACKEND LLM IMPLEMENTATIONS
+--------------------------------------------------------------------------------
+backend/app/llm/providers/base_provider.py
+  -> Interface parent class `BaseLLM` establishing required text-generation and streaming generation contracts.
+
+backend/app/llm/providers/ollama_provider.py
+  -> Concrete provider implementation communicating with the local Ollama instance for text and tool calling.
+
+backend/app/llm/providers/openai_provider.py
+  -> Concrete provider implementation communicating with OpenAI cloud endpoints.
+
+backend/app/llm/providers/anthropic_provider.py
+  -> Concrete provider implementation communicating with Anthropic Claude cloud APIs.
+
+--------------------------------------------------------------------------------
+BACKEND SERVICES & UTILITIES
+--------------------------------------------------------------------------------
+backend/app/services/llm_service.py
+  -> Factory service that retrieves stored keys and initializes instances of selected LLM providers.
+
+backend/app/services/executor.py
+  -> Command router executing built-in actions (calculator, search_web, rag_lookup) and dynamic HTTP API tools.
+
+backend/app/services/parsers.py
+  -> Parser engine extraction code parsing PDF, DOCX, CSV, and text files into overlapping searchable text segments.
+
+backend/app/services/vector_store.py
+  -> Integrates with Qdrant client to initialize collections, embed/upload text segments, and search vector space.
+
+backend/app/services/tool_registry.py
+  -> Legacy in-memory mock registry for developer testing.
+
+--------------------------------------------------------------------------------
+BACKEND TEST & SCRIPT FILES
+--------------------------------------------------------------------------------
+backend/test_integration.py
+  -> Diagnostic CLI script testing database setups, document chunking parsers, and mock tool executors.
+
+backend/test_full_loop.py
+  -> Integration check verifying local Ollama agent loop execution with math problem resolution.
+
+backend/test_llm.py
+  -> Simple unit verification verifying basic response text generation from local Ollama model.
+
+backend/.env
+  -> File containing environmental settings, database connection URLs, and API credentials.
+
+backend/requirements.txt
+  -> Text file listing Python package dependencies required by the backend.
+
+--------------------------------------------------------------------------------
+FRONTEND ROOT FILES
+--------------------------------------------------------------------------------
+frontend/index.html
+  -> Main root HTML container containing entry element and script link for compiling React project code.
+
+frontend/vite.config.js
+  -> Build configuration file setting up developer server and proxy redirects to the API backend.
+
+frontend/package.json
+  -> Configuration containing package names, compiler scripts, and npm dependencies.
+
+frontend/eslint.config.js
+  -> Standard syntax validation configurations and styles for React/JavaScript frontend files.
+
+frontend/src/main.jsx
+  -> Main JavaScript loader rendering the root React components structure onto the HTML page.
+
+frontend/src/index.css
+  -> Global styles defining the theme variables, fonts, scrollbar styles, and basic utility classes.
+
+frontend/src/App.jsx
+  -> Entry React layout container managing panel switching, responsive views, tabs, and login status.
+
+frontend/src/App.css
+  -> Specific css styling declarations applied to the core app panels.
+
+--------------------------------------------------------------------------------
+FRONTEND REACT COMPONENTS
+--------------------------------------------------------------------------------
+frontend/src/components/Sidebar.jsx
+  -> Sidebar panel displaying navigation items, chat histories, active settings, and current profile info.
+
+frontend/src/components/ChatPanel.jsx
+  -> Interactive messaging interface rendering markdown chat bubbles, token streams, and intermediate tool call logs.
+
+frontend/src/components/KnowledgeHub.jsx
+  -> RAG document console letting users upload and process PDF/DOCX files, view progress logs, and delete items.
+
+frontend/src/components/ToolManager.jsx
+  -> UI component allowing users to declare and register custom REST APIs as LLM-executable tools.
+
+frontend/src/components/SettingsPanel.jsx
+  -> Dashboard to choose the active LLM provider/model and input key credentials for cloud services.
+
+frontend/src/components/LoginPanel.jsx
+  -> Authentication panel interface for user sign-in and account registration.
