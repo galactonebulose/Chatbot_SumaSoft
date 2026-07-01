@@ -30,12 +30,15 @@ async def get_llm_config(db: Session = Depends(get_db)):
     try:
         openai_key = db.query(LLMConfigModel).filter(LLMConfigModel.provider == "openai").first()
         anthropic_key = db.query(LLMConfigModel).filter(LLMConfigModel.provider == "anthropic").first()
+        gemini_key = db.query(LLMConfigModel).filter(LLMConfigModel.provider == "gemini").first()
         has_openai = bool(openai_key and openai_key.api_key)
         has_anthropic = bool(anthropic_key and anthropic_key.api_key)
+        has_gemini = bool(gemini_key and gemini_key.api_key)
     except Exception as e:
         print(f"Database error in get_llm_config: {e}")
         has_openai = False
         has_anthropic = False
+        has_gemini = False
         
     return {
         "default_provider": settings.DEFAULT_LLM_PROVIDER,
@@ -43,14 +46,15 @@ async def get_llm_config(db: Session = Depends(get_db)):
         "ollama_base_url": settings.OLLAMA_BASE_URL,
         "has_openai_key": has_openai,
         "has_anthropic_key": has_anthropic,
+        "has_gemini_key": has_gemini,
     }
 
 @router.post("/config")
 async def save_llm_config(request: LLMConfigRequest, db: Session = Depends(get_db)):
-    """Save or update API key for OpenAI or Anthropic"""
+    """Save or update API key for OpenAI, Anthropic, or Gemini"""
     provider = request.provider.lower()
-    if provider not in ["openai", "anthropic"]:
-        raise HTTPException(status_code=400, detail="Invalid provider. Supported: openai, anthropic")
+    if provider not in ["openai", "anthropic", "gemini"]:
+        raise HTTPException(status_code=400, detail="Invalid provider. Supported: openai, anthropic, gemini")
     
     try:
         config = db.query(LLMConfigModel).filter(LLMConfigModel.provider == provider).first()

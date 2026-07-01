@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # LLM Configuration - Flexible Model Selection
     DEFAULT_LLM_PROVIDER: str = "ollama"
     DEFAULT_MODEL_NAME: str = "llama3.2:3b"
+    DEFAULT_EMBEDDING_MODEL: str = "nomic-embed-text"
     
     # Ollama Settings
     LLM_API_BASE: str = "http://localhost:11434"   # Ollama default

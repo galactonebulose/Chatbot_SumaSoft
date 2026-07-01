@@ -6,7 +6,8 @@ import SaveIcon from '@mui/icons-material/Save';
 export default function SettingsPanel() {
   const [openaiKey, setOpenaiKey] = useState('');
   const [anthropicKey, setAnthropicKey] = useState('');
-  const [configState, setConfigState] = useState({ has_openai_key: false, has_anthropic_key: false });
+  const [geminiKey, setGeminiKey] = useState('');
+  const [configState, setConfigState] = useState({ has_openai_key: false, has_anthropic_key: false, has_gemini_key: false });
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
 
@@ -27,11 +28,9 @@ export default function SettingsPanel() {
   };
 
   const handleSave = async (provider, key) => {
-    if (!key.strip) {
-      if (!key.trim()) {
-        setAlert({ type: 'error', message: 'API key cannot be empty' });
-        return;
-      }
+    if (!key.trim()) {
+      setAlert({ type: 'error', message: 'API key cannot be empty' });
+      return;
     }
     
     setLoading(true);
@@ -44,9 +43,15 @@ export default function SettingsPanel() {
       });
       const data = await res.json();
       if (res.ok) {
-        setAlert({ type: 'success', message: `${provider === 'openai' ? 'OpenAI' : 'Anthropic'} API key saved successfully!` });
+        const providerNameMap = {
+          openai: 'OpenAI',
+          anthropic: 'Anthropic',
+          gemini: 'Google Gemini'
+        };
+        setAlert({ type: 'success', message: `${providerNameMap[provider]} API key saved successfully!` });
         if (provider === 'openai') setOpenaiKey('');
         if (provider === 'anthropic') setAnthropicKey('');
+        if (provider === 'gemini') setGeminiKey('');
         fetchConfig();
       } else {
         setAlert({ type: 'error', message: data.detail || 'Failed to save configuration' });
@@ -72,7 +77,7 @@ export default function SettingsPanel() {
 
       <Grid container spacing={4}>
         {/* OpenAI Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <Card className="glass-panel" sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
@@ -119,7 +124,7 @@ export default function SettingsPanel() {
         </Grid>
 
         {/* Anthropic Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <Card className="glass-panel" sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
@@ -160,6 +165,53 @@ export default function SettingsPanel() {
                 sx={{ textTransform: 'none' }}
               >
                 Save Anthropic Key
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Google Gemini Card */}
+        <Grid item xs={12} md={4}>
+          <Card className="glass-panel" sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Google Gemini
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'grey.400', mb: 3 }}>
+                Configure Google Gemini models (like gemini-3.5-flash).
+              </Typography>
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="caption" display="block" sx={{ color: configState.has_gemini_key ? 'success.main' : 'warning.main', mb: 1, fontWeight: 500 }}>
+                  ● {configState.has_gemini_key ? 'API Key Active (Configured)' : 'API Key Not Set'}
+                </Typography>
+                <TextField
+                  fullWidth
+                  type="password"
+                  label="Gemini API Key"
+                  placeholder="AIzaSy..."
+                  value={geminiKey}
+                  onChange={(e) => setGeminiKey(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <KeyIcon sx={{ color: 'grey.500' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  variant="outlined"
+                  size="small"
+                />
+              </Box>
+              
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                disabled={loading}
+                onClick={() => handleSave('gemini', geminiKey)}
+                sx={{ textTransform: 'none' }}
+              >
+                Save Gemini Key
               </Button>
             </CardContent>
           </Card>

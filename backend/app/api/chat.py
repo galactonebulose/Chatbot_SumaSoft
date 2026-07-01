@@ -9,7 +9,7 @@ import json
 from app.services.llm_service import LLMService
 from app.core.config import settings
 from app.core.db import get_db, get_mongo_db
-from app.models.schemas import ToolModel, ChatSessionModel
+from app.models.schemas import ToolModel, ChatSessionModel, ResourceModel
 from app.services.executor import ToolExecutor
 from app.api.tools import BUILTIN_TOOLS
 
@@ -123,6 +123,17 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         except Exception as mongo_err:
             print(f"Warning: Failed to log user message to MongoDB: {mongo_err}")
             
+        # Fetch the list of uploaded resources to inform the LLM
+        uploaded_files = []
+        try:
+            query = db.query(ResourceModel)
+            if request.user_id is not None:
+                query = query.filter((ResourceModel.user_id == request.user_id) | (ResourceModel.user_id.is_(None)))
+            resources = query.all()
+            uploaded_files = [r.filename for r in resources]
+        except Exception as e:
+            print(f"Warning: Failed to fetch resources in chat endpoint: {e}")
+
         # Load available database and built-in tools
         tools_list = get_db_tools(db)
         if not ToolExecutor.should_provide_tools(request.message):
@@ -131,7 +142,19 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         # Extract valid tool names for checking
         valid_tool_names = {t["function"]["name"] for t in tools_list} if tools_list else set()
         
-        system_prompt = """
+        uploaded_docs_section = ""
+        if uploaded_files:
+            files_list_str = "\n".join([f"- {f}" for f in uploaded_files])
+            uploaded_docs_section = f"""
+Currently Uploaded Documents in Knowledge Base:
+{files_list_str}
+
+IMPORTANT instructions for uploaded documents:
+- If the user asks a question that might refer to or be answered by the content of these uploaded documents, you MUST use the `rag_lookup` tool to query the document content before answering. Do NOT assume you know the answers to questions about these documents without searching them first.
+- If the user's question relates to the topics or content of these files, call `rag_lookup` automatically.
+"""
+
+        system_prompt = f"""
 You are a helpful AI assistant.
 
 You have access to these tools:
@@ -144,26 +167,26 @@ You have access to these tools:
 
 3. rag_lookup
    Use ONLY for uploaded documents.
-
+{uploaded_docs_section}
 IMPORTANT:
 - Most user requests DO NOT require tools.
-- If you can answer directly, do NOT call any tool.
+- If you can answer directly (and the answer does not depend on the uploaded documents), do NOT call any tool.
 - Never call calculator for jokes, greetings, explanations, coding, writing, or conversation.
 - Never call search_web for general knowledge.
-- Never call rag_lookup unless the answer depends on uploaded documents.
+- If uploaded documents are available, and the user's query relates to their content or topics, call `rag_lookup` automatically to search the document context before answering. Always prioritize calling `rag_lookup` over `search_web` if the query topic could possibly be covered by the uploaded documents.
 
 Before selecting a tool:
 
-1. Can I answer directly?
+1. Can I answer directly without any external info or uploaded document context?
    If YES, answer directly.
 
-2. Does it require math?
+2. Does the query require math?
    If YES, calculator.
 
-3. Does it require uploaded documents?
+3. Does the query relate to or require information from the uploaded documents (listed above)?
    If YES, rag_lookup.
 
-4. Does it require current internet information?
+4. Does the query require current internet information?
    If YES, search_web.
 """
         
@@ -240,15 +263,19 @@ Before selecting a tool:
                 func_name = tc["function"]["name"]
                 func_args = tc["function"]["arguments"]
                 
-                # Format to OpenAI spec
-                assistant_msg["tool_calls"].append({
+                # Format to OpenAI spec and preserve extra fields (like thought_signature)
+                tc_item = {
                     "id": call_id,
                     "type": "function",
                     "function": {
                         "name": func_name,
                         "arguments": json.dumps(func_args)
                     }
-                })
+                }
+                for k, v in tc.items():
+                    if k not in ["id", "type", "function"]:
+                        tc_item[k] = v
+                assistant_msg["tool_calls"].append(tc_item)
                 
                 # Execute tool
                 print(f"Agent executing tool: {func_name} with parameters: {func_args}")

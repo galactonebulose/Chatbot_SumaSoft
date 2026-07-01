@@ -41,7 +41,13 @@ frontend_dir = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "frontend"
 )
-if os.path.exists(frontend_dir):
+frontend_dist_dir = os.path.join(frontend_dir, "dist")
+frontend_built = os.path.exists(frontend_dist_dir)
+
+if frontend_built:
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist_dir, "assets")), name="assets")
+    app.mount("/static", StaticFiles(directory=frontend_dist_dir), name="static")
+elif os.path.exists(frontend_dir):
     app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 else:
     app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -59,6 +65,9 @@ app.include_router(llm.router, prefix="/api/v1", tags=["LLM"])
 
 @app.get("/")
 async def root():
+    if frontend_built:
+        from fastapi.responses import FileResponse
+        return FileResponse(os.path.join(frontend_dist_dir, "index.html"))
     return {"message": "Chatbot Framework API is running. Visit /docs for Swagger UI"}
 
 @app.get("/health")

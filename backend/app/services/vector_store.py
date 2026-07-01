@@ -29,14 +29,20 @@ async def get_ollama_model_cached() -> Optional[str]:
                 data = resp.json()
                 models = [m["name"] for m in data.get("models", [])]
                 if models:
-                    pref = settings.DEFAULT_MODEL_NAME
-                    if pref in models:
-                        cached_ollama_model = pref
-                    elif f"{pref}:latest" in models:
-                        cached_ollama_model = f"{pref}:latest"
+                    emb_pref = getattr(settings, "DEFAULT_EMBEDDING_MODEL", "nomic-embed-text")
+                    if emb_pref in models:
+                        cached_ollama_model = emb_pref
+                    elif f"{emb_pref}:latest" in models:
+                        cached_ollama_model = f"{emb_pref}:latest"
                     else:
-                        # Fallback to first pulled model (e.g. llama3.2:3b)
-                        cached_ollama_model = models[0]
+                        pref = settings.DEFAULT_MODEL_NAME
+                        if pref in models:
+                            cached_ollama_model = pref
+                        elif f"{pref}:latest" in models:
+                            cached_ollama_model = f"{pref}:latest"
+                        else:
+                            # Fallback to first pulled model (e.g. llama3.2:3b)
+                            cached_ollama_model = models[0]
                     last_check_time = current_time
                     return cached_ollama_model
     except Exception as e:
@@ -80,7 +86,7 @@ async def get_embedding(text: str) -> List[float]:
         return [0.0] * 768
         
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             # Try older /api/embeddings endpoint
             try:
                 response = await client.post(
@@ -173,6 +179,9 @@ async def query_vector_store(query: str, top_k: int = 3) -> List[Dict[str, Any]]
         
         formatted = []
         for r in search_result.points:
+            # Filter out chunks with score below similarity threshold
+            if r.score < 0.45:
+                continue
             formatted.append({
                 "text": r.payload.get("text", ""),
                 "metadata": r.payload.get("metadata", {}),
