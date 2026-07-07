@@ -49,8 +49,10 @@ if frontend_built:
     app.mount("/static", StaticFiles(directory=frontend_dist_dir), name="static")
 elif os.path.exists(frontend_dir):
     app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
-else:
+elif os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
+else:
+    print("Static files directory not found. Running in API-only mode.")
 
 # Include routers
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])

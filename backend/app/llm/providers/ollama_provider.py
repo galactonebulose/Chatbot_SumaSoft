@@ -2,6 +2,7 @@ import httpx
 import json
 from .base_provider import BaseLLM
 from typing import AsyncGenerator, Dict, Any, Union, List
+from app.core.config import settings
 
 class OllamaProvider(BaseLLM):
     """Concrete implementation for local Ollama models calling /api/chat directly"""
@@ -10,7 +11,7 @@ class OllamaProvider(BaseLLM):
         if model_name == "llama3.2":
             model_name = "llama3.2:3b"
         super().__init__(model_name, temperature, max_tokens)
-        self.base_url = "http://localhost:11434"
+        self.base_url = settings.OLLAMA_BASE_URL
 
     def _format_messages(self, prompt: Union[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         if isinstance(prompt, str):

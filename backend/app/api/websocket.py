@@ -45,8 +45,10 @@ async def websocket_chat(websocket: WebSocket):
             user_id = payload.get("user_id")
             
             # Generate session ID if not set
+            session_created = False
             if not session_id:
                 session_id = str(uuid.uuid4())
+                session_created = True
                 
             # Ensure session exists in PostgreSQL
             try:
@@ -55,10 +57,13 @@ async def websocket_chat(websocket: WebSocket):
                     new_sess = ChatSessionModel(id=session_id, provider=provider, model=model, user_id=user_id)
                     db.add(new_sess)
                     db.commit()
+                    session_created = True
             except Exception as e:
                 db.rollback()
                 print(f"WS: Failed to save session in SQL: {e}")
-                    
+                session_created = True
+
+            if session_created:
                 # Broadcast the newly initialized session_id
                 await websocket.send_json({"type": "session_created", "session_id": session_id})
 

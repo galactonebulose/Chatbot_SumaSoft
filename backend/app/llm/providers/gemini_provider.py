@@ -6,7 +6,7 @@ import json
 class GeminiProvider(BaseLLM):
     """Concrete implementation for Google Gemini models via OpenAI-compatible endpoint"""
     
-    def __init__(self, model_name: str = "gemini-1.5-flash", api_key: str = None, temperature: float = 0.7, max_tokens: int = 2048):
+    def __init__(self, model_name: str = "gemini-3.5-flash", api_key: str = None, temperature: float = 0.7, max_tokens: int = 2048):
         super().__init__(model_name, temperature, max_tokens)
         self.api_key = api_key
         self._client = None
