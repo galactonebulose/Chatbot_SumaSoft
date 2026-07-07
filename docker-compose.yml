@@ -10,12 +10,12 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
-      POSTGRES_DB: chatbot
+      POSTGRES_DB: chatbot_test
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d chatbot"]
+      test: ["CMD-SHELL", "pg_isready -U user -d chatbot_test"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -46,48 +46,21 @@ services:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
 
-  # Local LLM Server
-  ollama:
-    image: ollama/ollama:latest
-    container_name: chatbot-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    restart: unless-stopped
-
-  # Auto setup models on startup
-  ollama-setup:
-    image: curlimages/curl:latest
-    container_name: chatbot-ollama-setup
-    entrypoint: [ "sh", "-c" ]
-    command:
-      - |
-        echo "Waiting for Ollama service to start..."
-        until curl -s http://ollama:11434/api/tags > /dev/null; do
-          sleep 2
-        done
-        echo "Ollama is running. Pulling llama3.2:3b..."
-        curl -X POST http://ollama:11434/api/pull -d '{"name": "llama3.2:3b"}'
-        echo "Pulling nomic-embed-text..."
-        curl -X POST http://ollama:11434/api/pull -d '{"name": "nomic-embed-text"}'
-        echo "Ollama models setup complete!"
-    depends_on:
-      - ollama
-
-  # Unified Web Application (FastAPI Backend + Built React Frontend served on port 8001)
-  web:
+  # FastAPI Backend Service
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: chatbot-web
+    container_name: chatbot-backend
     ports:
       - "8001:8001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      - POSTGRES_URL=postgresql://user:pass@postgres:5432/chatbot
-      - MONGO_URL=mongodb://mongodb:27017/chatbot
+      - POSTGRES_URL=postgresql://user:pass@postgres:5432/chatbot_test
+      - MONGO_URL=mongodb://mongodb:27017/chatbot_test
       - QDRANT_URL=http://qdrant:6333
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,9 +68,22 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
-      ollama:
-        condition: service_started
     restart: unless-stopped
+
+  # React Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chatbot-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_BACKEND_URL=http://backend:8001
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 
 volumes:
   postgres_data:
@@ -106,5 +92,4 @@ volumes:
     driver: local
   qdrant_data:
     driver: local
-  ollama_data:
-    driver: local
+
